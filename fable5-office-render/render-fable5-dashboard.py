@@ -71,6 +71,15 @@ for row in hbp_docs.get("FABLE5-BIGPICKLE-MAP-2026-07-04.hbp", []):
     elif tag == "NEWERSYSTEM": bpmap["newer"] = d
     elif tag == "PERMANENT": bpmap["permanent"] = d
 
+# ---- orchestrator law (the standing order, permanent top-of-wall) ----
+orchlaw = []
+for row in hbp_docs.get("FABLE5-ORCHESTRATOR-LAW-2026-07-04.hbp", []):
+    tag, fields = parse_row(row)
+    if tag == "ORCHLAW":
+        bare = [k for k, v in fields if v is None]
+        if len(bare) >= 2:
+            orchlaw.append((bare[0], bare[1]))
+
 # ---- CSS: reuse the existing dashboard's <style> so the look is preserved ----
 css = ""
 if os.path.exists(OUT):
@@ -105,6 +114,9 @@ css += (".bpmap{background:linear-gradient(180deg,#0d1526,#0b1120);border:1px so
         ".bpflow{color:var(--cy);font-size:11px;margin:5px 0 10px;font-weight:600;word-break:break-word;line-height:1.7}"
         ".bprow{border-top:1px dashed var(--ln);padding:4px 0;font-size:10px;word-break:break-word}.bprow:first-of-type{border-top:none}"
         ".bpn{color:var(--warn);font-weight:600;margin-right:7px;display:inline-block;min-width:44px}.bpo{color:var(--tx)}.bpa{color:var(--up)}")
+css += (".stord{background:linear-gradient(180deg,#1c1305,#0b1120);border:1px solid var(--warn);border-radius:8px;padding:12px 14px;margin-bottom:16px}"
+        ".sordrow{border-top:1px dashed var(--ln);padding:4px 0;font-size:10.5px;word-break:break-word}.sordrow:first-of-type{border-top:none}"
+        ".sordrow.anti{color:var(--down)}.sordn{color:var(--warn);font-weight:600;margin-right:7px;display:inline-block;min-width:52px}")
 
 e = html.escape
 FAM_COLORS = {"SEATCUBE": "#43e8d8", "OFFICECUBE": "#ffb454", "CONNECTORCUBE": "#a78bfa",
@@ -154,6 +166,15 @@ def bigpickle_panel():
     out.append("</div>")
     return "".join(out)
 
+def standing_order_panel():
+    if not orchlaw: return ""
+    out = ['<div class=stord><div class=manh style="color:var(--warn)">&#9873; STANDING ORDER &mdash; I AM THE ORCHESTRATOR (permanent) <em>emit tiny verdicts &middot; do not spawn labor</em></div>']
+    for name, text in orchlaw:
+        cls = "sordrow anti" if "ANTI" in name else "sordrow"
+        out.append(f'<div class="{cls}"><span class=sordn>{e(name)}</span>{e(text.replace("_", " "))}</div>')
+    out.append("</div>")
+    return "".join(out)
+
 # ---- assemble the page ----
 parts = [
  "<!doctype html><html lang=en translate=no><head><meta charset=utf-8>",
@@ -172,6 +193,7 @@ parts = [
  f'<div class=hbadge>cubes <b>{sum(len(v) for v in families.values())}</b></div>',
  '<div class=hbadge>backend <b>HBI / HBP</b> json=0</div><div class=hbadge>pixels-first <b>1</b></div><div class=hbadge>fire <b>0</b></div>',
  "</div></header>",
+ standing_order_panel(),
  '<div class=sect>big pickle rebuild &mdash; the ramp map re-expressed in the newer systems (pixels-first, from the backend)</div>',
  bigpickle_panel(),
  '<div class=sect>work cranks &mdash; rendered from every PIECE row in the backend HBP</div>',
